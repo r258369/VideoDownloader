@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VidStream - Video Downloader</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Poppins', sans-serif; }
+    .dark-gradient { background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); }
+    .card-dark { background: linear-gradient(145deg, #1e1e2e, #252540); box-shadow: 20px 20px 60px #0a0a15, -20px -20px 60px #2a2a45; }
+    .neon-border { border: 2px solid transparent; background: linear-gradient(145deg, #1e1e2e, #252540) padding-box, linear-gradient(45deg, #00d4ff, #ff00ff) border-box; }
+    .pulse-glow { animation: pulseGlow 2s ease-in-out infinite alternate; }
+    @keyframes pulseGlow { from { box-shadow: 0 0 20px #00d4ff40; } to { box-shadow: 0 0 40px #00d4ff80, 0 0 60px #ff00ff40; } }
+    .floating { animation: floating 3s ease-in-out infinite; }
+    @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+</style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen dark-gradient">
+
+<!-- Navigation -->
+<nav class="p-6 border-b border-gray-800">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <h1 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">VidStream</h1>
+    </div>
+</nav>
+
+<!-- Main Content -->
+<div class="max-w-4xl mx-auto px-6 py-16">
+    <div class="card-dark rounded-3xl p-8 mb-12 neon-border">
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-gray-200">Paste Video URL</h3>
+            <div class="relative">
+                <input type="url" id="videoUrl" placeholder="https://youtube.com/watch?v=..." 
+                       class="w-full px-6 py-4 bg-gray-800 border-2 border-gray-700 rounded-2xl focus:border-cyan-500 text-white">
+            </div>
+        </div>
+
+        <!-- Format Selection -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-gray-200">Choose Format</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <button onclick="selectFormat('video')" class="format-btn bg-gray-800 p-4 rounded-xl">Video (MP4)</button>
+                <button onclick="selectFormat('audio')" class="format-btn bg-gray-800 p-4 rounded-xl">Audio (MP3)</button>
+            </div>
+        </div>
+
+        <!-- Download Button -->
+        <div class="text-center mb-6">
+            <button id="downloadBtn" onclick="startDownload()" 
+                    class="px-12 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all">
+                Download Now
+            </button>
+        </div>
+
+        <!-- Progress Bar -->
+        <div id="progressContainer" class="hidden mb-4">
+            <div class="w-full bg-gray-700 rounded-full h-4">
+                <div id="progressBar" class="bg-gradient-to-r from-cyan-500 to-purple-500 h-4 rounded-full w-0 transition-all"></div>
+            </div>
+            <p id="progressText" class="text-center mt-2 text-gray-300">0%</p>
+        </div>
+
+        <!-- Messages -->
+        <div id="messageContainer" class="hidden text-center mt-4">
+            <p id="messageText" class="text-lg"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedType = "video"; // default
+
+function selectFormat(type) {
+    selectedType = type;
+    document.querySelectorAll(".format-btn").forEach(btn => {
+        btn.classList.remove("border-2","border-cyan-500","bg-gray-700");
+        btn.classList.add("bg-gray-800");
+    });
+    event.target.classList.add("border-2","border-cyan-500","bg-gray-700");
+}
+
+function startDownload() {
+    const url = document.getElementById("videoUrl").value.trim();
+    if (!url) {
+        alert("Please enter a video URL");
+        return;
+    }
+
+    const progressContainer = document.getElementById("progressContainer");
+    const progressBar = document.getElementById("progressBar");
+    const progressText = document.getElementById("progressText");
+    const messageContainer = document.getElementById("messageContainer");
+    const messageText = document.getElementById("messageText");
+
+    progressContainer.classList.remove("hidden");
+    messageContainer.classList.add("hidden");
+    progressBar.style.width = "0%";
+    progressText.textContent = "0%";
+
+    let progress = 0;
+    const interval = setInterval(() => {
+        progress += Math.random() * 5 + 2;
+        if (progress > 90) progress = 90; // reserve last 10% until server responds
+        progressBar.style.width = progress + "%";
+        progressText.textContent = Math.floor(progress) + "%";
+    }, 300);
+
+    const formData = new FormData();
+    formData.append("url", url);
+    formData.append("type", selectedType);
+    const csrf = getCookie("csrftoken");
+    if (csrf) formData.append("csrfmiddlewaretoken", csrf);
+
+    fetch("/download_media/", {
+        method: "POST",
+        body: formData
+    }).then(response => {
+        clearInterval(interval);
+        progressBar.style.width = "100%";
+        progressText.textContent = "100%";
+
+        if (response.ok) {
+            messageText.textContent = "✅ Download completed successfully!";
+            messageText.classList.remove("text-red-500");
+            messageText.classList.add("text-green-400");
+        } else {
+            messageText.textContent = "❌ Download failed!";
+            messageText.classList.remove("text-green-400");
+            messageText.classList.add("text-red-500");
+        }
+        messageContainer.classList.remove("hidden");
+        return response.blob(); // optional if you want to trigger download
+    }).then(blob => {
+        // Trigger browser download
+        const a = document.createElement("a");
+        a.href = window.URL.createObjectURL(blob);
+        a.download = "video." + (selectedType === "audio" ? "mp3" : "mp4");
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }).catch(error => {
+        clearInterval(interval);
+        messageText.textContent = "❌ Error: " + error;
+        messageText.classList.remove("text-green-400");
+        messageText.classList.add("text-red-500");
+        messageContainer.classList.remove("hidden");
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+</body>
+</html>

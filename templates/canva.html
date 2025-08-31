@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VidStream - Video Downloader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+        .dark-gradient { background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%); }
+        .card-dark { background: linear-gradient(145deg, #1e1e2e, #252540); box-shadow: 20px 20px 60px #0a0a15, -20px -20px 60px #2a2a45; }
+        .neon-border { border: 2px solid transparent; background: linear-gradient(145deg, #1e1e2e, #252540) padding-box, linear-gradient(45deg, #00d4ff, #ff00ff) border-box; }
+        .pulse-glow { animation: pulseGlow 2s ease-in-out infinite alternate; }
+        @keyframes pulseGlow { from { box-shadow: 0 0 20px #00d4ff40; } to { box-shadow: 0 0 40px #00d4ff80, 0 0 60px #ff00ff40; } }
+        .floating { animation: floating 3s ease-in-out infinite; }
+        @keyframes floating { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen dark-gradient">
+
+    <!-- Navigation -->
+    <nav class="p-6 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <div class="w-12 h-12 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center pulse-glow">
+                        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    </div>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">VidStream</h1>
+                    <p class="text-xs text-gray-400">Professional Video Downloader</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto px-6 py-16">
+        <!-- Input -->
+        <div class="card-dark rounded-3xl p-8 mb-12 neon-border">
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-200">Paste Video URL</h3>
+                <div class="relative">
+                    <input type="url" id="videoUrl" placeholder="https://youtube.com/watch?v=..." 
+                           class="w-full px-6 py-4 bg-gray-800 border-2 border-gray-700 rounded-2xl focus:border-cyan-500 text-white">
+                </div>
+            </div>
+
+            <!-- Format Selection -->
+            <div class="mb-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-200">Choose Format</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <button onclick="selectFormat('video')" class="format-btn bg-gray-800 p-4 rounded-xl">Video (MP4)</button>
+                    <button onclick="selectFormat('audio')" class="format-btn bg-gray-800 p-4 rounded-xl">Audio (MP3)</button>
+                </div>
+            </div>
+
+            <!-- Download Button -->
+            <div class="text-center">
+                <button id="downloadBtn" onclick="startDownload()" 
+                        class="px-12 py-4 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-2xl font-bold text-lg hover:shadow-2xl transition-all">
+                    Download Now
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedType = "video"; // default
+
+        function selectFormat(type) {
+            selectedType = type;
+            document.querySelectorAll(".format-btn").forEach(btn => {
+                btn.classList.remove("border-2","border-cyan-500","bg-gray-700");
+                btn.classList.add("bg-gray-800");
+            });
+            event.target.classList.add("border-2","border-cyan-500","bg-gray-700");
+        }
+
+        function startDownload() {
+            const url = document.getElementById("videoUrl").value.trim();
+            if (!url) {
+                alert("Please enter a video URL");
+                return;
+            }
+
+            // Create a form and submit to trigger file download
+            const form = document.createElement("form");
+            form.method = "POST";
+            form.action = "/download_media/";
+            form.style.display = "none";
+
+            const urlInput = document.createElement("input");
+            urlInput.name = "url";
+            urlInput.value = url;
+            form.appendChild(urlInput);
+
+            const typeInput = document.createElement("input");
+            typeInput.name = "type";
+            typeInput.value = selectedType;
+            form.appendChild(typeInput);
+
+            // CSRF token (if enabled in Django)
+            const csrf = getCookie("csrftoken");
+            if (csrf) {
+                const csrfInput = document.createElement("input");
+                csrfInput.name = "csrfmiddlewaretoken";
+                csrfInput.value = csrf;
+                form.appendChild(csrfInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Helper to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+</body>
+</html>

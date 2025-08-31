@@ -1,0 +1,4 @@
+Django>=4.2.0
+yt-dlp>=2023.7.6
+whitenoise
+gunicorn
