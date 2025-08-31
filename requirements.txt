@@ -1,4 +1,4 @@
 Django>=4.2.0
-yt-dlp>=2025.08.31
+yt-dlp>=2024.12.30
 whitenoise
 gunicorn
