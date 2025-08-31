@@ -6,7 +6,6 @@ from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from yt_dlp import YoutubeDL
 
-# --- Replace with your Gmail and app password ---
 YOUTUBE_EMAIL = "xyz328719@gmail.com"
 YOUTUBE_PASSWORD = "ratul@369"  # use app password if 2FA is enabled
 
