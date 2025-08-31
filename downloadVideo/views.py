@@ -2,6 +2,7 @@ from django.shortcuts import render
 import os
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from Downloader.settings import BASE_DIR
 from yt_dlp import YoutubeDL
 
 
@@ -19,6 +20,7 @@ def download_media(request):
             ydl_opts = {
                 'format': 'bestaudio/best' if media_type == "audio" else 'best',
                 'outtmpl': 'downloads/%(title)s.%(ext)s',
+                'cookiefile': os.path.join(BASE_DIR, 'cookies.txt'),
             }
             with YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
